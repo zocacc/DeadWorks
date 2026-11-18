@@ -28,6 +28,8 @@ func _ready() -> void:
 	add_child(_model)
 	# The imported animation corrects the original up axis on the armature.
 	_model.scale = Vector3.ONE * model_scale
+	# These GLB characters face +Z; gameplay and the rifle use -Z as forward.
+	_model.rotation.y = PI
 	skeleton = _model.find_child("Skeleton3D", true, false) as Skeleton3D
 	animation_player = _model.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if skeleton == null or animation_player == null:
