@@ -64,7 +64,7 @@ func take_damage(amount: float) -> void:
 	visual.play_hurt()
 	if health <= 0.0:
 		dead = true
-		_death_left = 0.75
+		_death_left = 1.25
 		velocity = Vector3.ZERO
 		$Collision.set_deferred("disabled", true)
 		visual.play_death()

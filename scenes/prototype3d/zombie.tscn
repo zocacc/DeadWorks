@@ -17,5 +17,5 @@ position = Vector3(0, 0.875, 0)
 shape = SubResource("Capsule")
 
 [node name="Visual" type="Node3D" parent="."]
-zombie = true
 script = ExtResource("2")
+zombie = true

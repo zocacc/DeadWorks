@@ -16,7 +16,7 @@ Abra `project.godot` com Godot 4.7.2 no notebook e pressione F5. WASD move no pl
 - `Zombie`: vida, velocidade, detecção, alcance, dano e intervalo do ataque.
 - `ZombieSpawner`: quantidade inicial 20, máximo simultâneo 60, intervalo de nascimento e distância segura.
 
-A arena mede 80 × 80 unidades. Personagens usam colisões físicas separadas dos modelos provisórios; os visuais humanoides são construídos com meshes primitivas, com animação procedural de caminhada, ataque, dano e morte. O tiro é um raycast horizontal a partir da arma na altura do tronco, na direção calculada pelo cursor projetado no terreno.
+A arena mede 80 × 80 unidades. Personagens usam colisões físicas separadas dos modelos provisórios; os visuais humanoides usam modelos GLB estilizados com esqueleto e animações. O sobrevivente segura um rifle 3D com marcador no cano. O tiro é um raycast horizontal na altura do tronco, na direção calculada pelo cursor projetado no terreno; clarão e traçante saem do cano. As [fontes e licenças dos modelos](modelos-3d.md) estão documentadas separadamente.
 
 ## Verificar na VM
 

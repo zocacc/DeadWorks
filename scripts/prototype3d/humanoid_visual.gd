@@ -1,88 +1,95 @@
 extends Node3D
 class_name HumanoidVisual
 
-@export var zombie := false
+const SURVIVOR = preload("res://assets/characters/survivor_swat.glb")
+const INFECTED = preload("res://assets/characters/zombie_hoodie.glb")
+const RIFLE = preload("res://assets/weapons/rifle.glb")
+const ANIM_PREFIX := "CharacterArmature|"
 
-var left_arm: Node3D
-var right_arm: Node3D
-var left_leg: Node3D
-var right_leg: Node3D
-var torso: MeshInstance3D
-var head: MeshInstance3D
-var _walk_phase := 0.0
+@export var zombie := false
+@export_range(0.5, 2.0, 0.05) var model_scale := 1.0
+
+var skeleton: Skeleton3D
+var animation_player: AnimationPlayer
+var rifle: Node3D
+var muzzle: Marker3D
+var _model: Node3D
 var _motion := 0.0
 var _attack_time := 0.0
 var _hurt_time := 0.0
-var _death_time := 0.0
 var _dead := false
+var _recoil := 0.0
 var _materials: Array[StandardMaterial3D] = []
-var _base_colors: Array[Color] = []
+var _colors: Array[Color] = []
 
 
 func _ready() -> void:
-	var cloth := _material(Color("64747a") if not zombie else Color("686d69"))
-	var dark := _material(Color("424a4d") if not zombie else Color("535753"))
-	var skin := _material(Color("a8a8a1") if not zombie else Color("9aaba0"))
-	var boots := _material(Color("343b3d"))
-	torso = _box(self, Vector3(0, 1.20, 0), Vector3(0.58, 0.69, 0.36), cloth)
-	_box(self, Vector3(0, 0.83, 0), Vector3(0.54, 0.17, 0.33), dark)
-	head = _sphere(self, Vector3(0, 1.82, 0), Vector3(0.22, 0.24, 0.22), skin)
-	_box(self, Vector3(0, 1.98, 0.03), Vector3(0.40, 0.08, 0.34), dark)
-	left_arm = _limb_pivot(Vector3(-0.39, 1.47, 0))
-	right_arm = _limb_pivot(Vector3(0.39, 1.47, 0))
-	_box(left_arm, Vector3(0, -0.27, 0), Vector3(0.19, 0.52, 0.22), cloth)
-	_box(right_arm, Vector3(0, -0.27, 0), Vector3(0.19, 0.52, 0.22), cloth)
-	_box(left_arm, Vector3(0, -0.58, 0), Vector3(0.15, 0.15, 0.17), skin)
-	_box(right_arm, Vector3(0, -0.58, 0), Vector3(0.15, 0.15, 0.17), skin)
-	left_leg = _limb_pivot(Vector3(-0.17, 0.79, 0))
-	right_leg = _limb_pivot(Vector3(0.17, 0.79, 0))
-	_box(left_leg, Vector3(0, -0.32, 0), Vector3(0.24, 0.65, 0.28), dark)
-	_box(right_leg, Vector3(0, -0.32, 0), Vector3(0.24, 0.65, 0.28), dark)
-	_box(left_leg, Vector3(0, -0.69, -0.06), Vector3(0.28, 0.17, 0.40), boots)
-	_box(right_leg, Vector3(0, -0.69, -0.06), Vector3(0.28, 0.17, 0.40), boots)
-	if zombie:
-		left_arm.rotation.x = -0.45
-		right_arm.rotation.x = -0.45
+	_model = (INFECTED if zombie else SURVIVOR).instantiate()
+	add_child(_model)
+	# The imported animation corrects the original up axis on the armature.
+	_model.scale = Vector3.ONE * model_scale
+	skeleton = _model.find_child("Skeleton3D", true, false) as Skeleton3D
+	animation_player = _model.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if skeleton == null or animation_player == null:
+		push_error("Modelo humanoide sem esqueleto ou animações")
+		return
+	for clip in ["Idle", "Idle_Gun", "Walk", "Run"]:
+		animation_player.get_animation(ANIM_PREFIX + clip).loop_mode = Animation.LOOP_LINEAR
+	_prepare_materials()
+	if not zombie:
+		_attach_rifle()
+	_play("Idle" if zombie else "Idle_Gun")
 
 
-func _material(color: Color) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.95
-	_materials.append(material)
-	_base_colors.append(color)
-	return material
+func _prepare_materials() -> void:
+	for child in skeleton.get_children():
+		if not child is MeshInstance3D:
+			continue
+		var mesh := child as MeshInstance3D
+		for surface in mesh.mesh.get_surface_count():
+			var source := mesh.mesh.surface_get_material(surface) as StandardMaterial3D
+			if source == null:
+				continue
+			var material := source.duplicate() as StandardMaterial3D
+			if zombie:
+				match source.resource_name:
+					"Skin": material.albedo_color = Color("829285")
+					"Purple": material.albedo_color = Color("464b46")
+					"LightBlue": material.albedo_color = Color("3e4544")
+					"White": material.albedo_color = Color("77776b")
+			mesh.set_surface_override_material(surface, material)
+			_materials.append(material)
+			_colors.append(material.albedo_color)
 
 
-func _limb_pivot(at: Vector3) -> Node3D:
-	var pivot := Node3D.new()
-	pivot.position = at
-	add_child(pivot)
-	return pivot
+func _attach_rifle() -> void:
+	var grip := BoneAttachment3D.new()
+	grip.name = "WeaponGrip"
+	grip.bone_name = "Wrist.R"
+	skeleton.add_child(grip)
+	rifle = RIFLE.instantiate()
+	rifle.name = "Rifle"
+	grip.add_child(rifle)
+	# The armature and weapon meshes both carry the source's 100x GLB scale.
+	rifle.top_level = true
+	_update_rifle_pose()
+	muzzle = Marker3D.new()
+	muzzle.name = "Muzzle"
+	rifle.add_child(muzzle)
+	muzzle.position = Vector3(3.55, 0.0, 0.0)
 
 
-func _box(parent: Node3D, at: Vector3, dimensions: Vector3, material: Material) -> MeshInstance3D:
-	var instance := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = dimensions
-	instance.mesh = box
-	instance.material_override = material
-	instance.position = at
-	parent.add_child(instance)
-	return instance
+func _update_rifle_pose() -> void:
+	var grip := rifle.get_parent() as BoneAttachment3D
+	var body_basis := global_basis.orthonormalized()
+	var recoil_offset := Vector3(0.23, 0.15, -0.35 + _recoil * 0.08)
+	rifle.global_transform = Transform3D((body_basis * Basis(Vector3.UP, PI / 2.0)).scaled(Vector3.ONE * 0.22), grip.global_position + body_basis * recoil_offset)
 
 
-func _sphere(parent: Node3D, at: Vector3, scale_value: Vector3, material: Material) -> MeshInstance3D:
-	var instance := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = 1.0
-	sphere.height = 2.0
-	instance.mesh = sphere
-	instance.material_override = material
-	instance.position = at
-	instance.scale = scale_value
-	parent.add_child(instance)
-	return instance
+func get_muzzle_global_position() -> Vector3:
+	if muzzle != null:
+		return muzzle.global_position
+	return global_position + Vector3.UP * 1.35 - global_basis.z * 0.65
 
 
 func set_motion(speed_ratio: float) -> void:
@@ -90,35 +97,52 @@ func set_motion(speed_ratio: float) -> void:
 
 
 func play_attack() -> void:
-	_attack_time = 0.38
+	if _dead:
+		return
+	_attack_time = 0.27 if not zombie else 0.68
+	_play("Gun_Shoot" if not zombie else "Punch_Right", true)
+	_recoil = 1.0 if not zombie else 0.0
 
 
 func play_hurt() -> void:
+	if _dead:
+		return
 	_hurt_time = 0.22
+	_play("HitRecieve", true)
 
 
 func play_death() -> void:
 	_dead = true
-	_death_time = 0.0
+	_motion = 0.0
+	animation_player.speed_scale = 1.0
+	_play("Death", true)
+
+
+func _play(name: String, restart := false) -> void:
+	if animation_player == null:
+		return
+	var full_name := ANIM_PREFIX + name
+	if not animation_player.has_animation(full_name):
+		return
+	if restart or animation_player.current_animation != full_name or not animation_player.is_playing():
+		animation_player.play(full_name, 0.12 if not restart else 0.04)
 
 
 func _process(delta: float) -> void:
+	if animation_player == null:
+		return
 	if _dead:
-		_death_time = minf(_death_time + delta, 0.55)
-		rotation.z = lerpf(0.0, 1.35, _death_time / 0.55)
-		position.y = -0.35 * (_death_time / 0.55)
 		return
 	_attack_time = maxf(0.0, _attack_time - delta)
 	_hurt_time = maxf(0.0, _hurt_time - delta)
-	_walk_phase += delta * (8.0 if zombie else 11.0) * _motion
-	var swing := sin(_walk_phase) * 0.52 * _motion
-	left_leg.rotation.x = swing
-	right_leg.rotation.x = -swing
-	left_arm.rotation.x = (-0.5 if zombie else 0.0) - swing * 0.65
-	right_arm.rotation.x = (-0.5 if zombie else 0.0) + swing * 0.65
-	if _attack_time > 0.0:
-		left_arm.rotation.x = -1.05
-		right_arm.rotation.x = -1.25
+	_recoil = maxf(0.0, _recoil - delta * 9.0)
+	if rifle != null:
+		_update_rifle_pose()
+	if _attack_time <= 0.0 and _hurt_time <= 0.0:
+		var locomotion := "Idle" if zombie else "Idle_Gun"
+		if _motion > 0.05:
+			locomotion = "Walk" if zombie or _motion <= 0.7 else "Run"
+		_play(locomotion)
+		animation_player.speed_scale = 0.9 + _motion * 0.4 if _motion > 0.05 else 1.0
 	for index in _materials.size():
-		_materials[index].albedo_color = _base_colors[index].lerp(Color("d96a64"), 0.6 if _hurt_time > 0.0 else 0.0)
-	position.y = absf(sin(_walk_phase)) * 0.055 * _motion
+		_materials[index].albedo_color = _colors[index].lerp(Color("e28a7d"), 0.55 if _hurt_time > 0.0 else 0.0)

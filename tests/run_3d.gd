@@ -28,7 +28,10 @@ func _run() -> void:
 	var first_zombie: PrototypeZombie = spawner.get_child(0)
 	first_zombie.visual.set_motion(1.0)
 	first_zombie.visual._process(0.1)
-	_check(absf(first_zombie.visual.left_leg.rotation.x) > 0.01 and absf(first_zombie.visual.right_leg.rotation.x) > 0.01, "caminhada dos zumbis movimenta as pernas")
+	_check(first_zombie.visual.animation_player.current_animation.ends_with("Walk"), "zumbis animados caminham sobre esqueleto")
+	_check(player.visual.rifle != null and player.visual.muzzle != null, "jogador porta rifle com marcador de cano")
+	_check(first_zombie.visual.zombie and first_zombie.visual.rifle == null, "zumbi tem visual infectado sem arma")
+	_check(player.visual.get_muzzle_global_position().z < player.global_position.z - 0.5, "cano aponta à frente do jogador")
 	var safe := true
 	for zombie in spawner.get_children():
 		if zombie.global_position.distance_to(player.global_position) < spawner.minimum_spawn_distance - 0.01:

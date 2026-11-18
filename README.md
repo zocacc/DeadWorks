@@ -32,4 +32,4 @@ Para exportar sem abrir o editor, execute `bash tools/export-windows.sh` na VM q
 - `assets/` e `data/`: sprites originais e futuras definições textuais.
 - `docs/`: plano do MVP e notas do ambiente.
 
-O protótipo 3D usa meshes primitivas geradas no projeto. O teste visual de iluminação, câmera e desempenho deve ser feito no notebook com GPU.
+O protótipo 3D usa [modelos GLB CC0 com animações](docs/modelos-3d.md), versionados via Git LFS. O teste visual de iluminação, câmera e desempenho deve ser feito no notebook com GPU.

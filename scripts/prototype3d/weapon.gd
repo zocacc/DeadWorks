@@ -49,6 +49,7 @@ func try_fire(direction: Vector3) -> bool:
 	_cooldown = 1.0 / shots_per_second
 	var horizontal := Vector3(direction.x, 0.0, direction.z).normalized()
 	var origin := shooter.global_position + Vector3.UP * 1.35 + horizontal * 0.52
+	var muzzle_origin := (shooter as PrototypePlayer).visual.get_muzzle_global_position() if shooter is PrototypePlayer else origin
 	var end := origin + horizontal * max_range
 	var query := PhysicsRayQueryParameters3D.create(origin, end, 2)
 	query.exclude = [shooter.get_rid()]
@@ -58,7 +59,7 @@ func try_fire(direction: Vector3) -> bool:
 		var hit: Object = result["collider"]
 		if hit.has_method("take_damage"):
 			hit.take_damage(damage)
-	_show_shot(origin, end)
+	_show_shot(muzzle_origin, end)
 	fired.emit(origin, end)
 	return true
 
