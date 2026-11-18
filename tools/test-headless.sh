@@ -16,4 +16,5 @@ if [[ "$imported" != true ]]; then
   exit 1
 fi
 "$godot_bin" --headless --path "$project_dir" --script res://tests/run.gd
+"$godot_bin" --headless --path "$project_dir" --script res://tests/run_3d.gd
 "$godot_bin" --headless --path "$project_dir" --quit-after 2

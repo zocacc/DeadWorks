@@ -1,12 +1,12 @@
 # DeadWorks
 
-Sandbox **2D isométrico** em **Godot 4.7.2**: coleta, automação e sobrevivência contra zumbis. O [MVP](docs/mvp.md) usa uma arena fixa para testar as mecânicas; geração procedural fica para depois.
+Protótipo de combate **3D graybox** em **Godot 4.7.2**. A cena inicial testa câmera elevada, movimento independente da mira, tiro hitscan e hordas de zumbis. O [MVP 2D anterior](docs/mvp.md) continua preservado em `scenes/main.tscn`.
 
-## Como jogar
+## Executar no PC
 
-Mova-se com **WASD** ou setas nas direções da tela. Pressione **E** perto de uma pilha para coletar sucata. Construa um **processador** (`1`), duas **esteiras** (`3`) apontando da saída do processador para a **montadora** (`2`), e abasteça o processador com `E`. Use **R** para girar a direção da peça selecionada e clique no losango da célula para posicionar. Espere o material atravessar as esteiras e a montadora produzir; pressione `E` perto dela para retirar os kits. Escolha **barricada** (`4`) e clique para construí-la com um kit.
+Atualize o clone pelo Git, abra `project.godot` no editor Godot 4.7.2 e pressione **F5**. O protótipo 3D é a cena principal. A [documentação do protótipo](docs/prototipo-3d.md) descreve os parâmetros configuráveis.
 
-**Espaço** ataca zumbis à frente do personagem. Clique direito ou Esc cancela a construção. Se a vida chegar a zero, **Enter** reinicia. Máquinas ativas atraem zumbis e aceleram sua chegada.
+**WASD** move em relação à câmera; **mouse** mira; **clique esquerdo** dispara automaticamente; **Shift** corre; **Espaço** esquiva; **scroll** altera o zoom; **Tab** compara perspectiva e ortográfica; **R** reinicia.
 
 ## Desenvolvimento
 
@@ -18,22 +18,18 @@ Na VM, execute:
 bash tools/test-headless.sh
 ```
 
-O script importa o projeto, testa a simulação e inicia a cena sem renderização. Ele aceita `GODOT_BIN=/caminho/para/godot` se o executável não estiver no `PATH`. O workflow do GitHub Actions executa os mesmos passos em push e pull request.
+O script importa o projeto, testa o MVP 2D preservado e a física do protótipo 3D, e inicia a cena principal sem renderização. Ele aceita `GODOT_BIN=/caminho/para/godot` se o executável não estiver no `PATH`. O workflow do GitHub Actions executa os mesmos passos em push e pull request.
 
-## Testar no Windows
+## Build Windows opcional
 
-Para abrir no editor Godot, baixe o snapshot local `DeadWorks-MVP-test.zip` da raiz da VM, importe `project.godot` com Godot 4.7.2 e pressione F5. Esse ZIP é ignorado pelo Git.
-
-Para jogar sem instalar a Godot, use o build portátil local `builds/windows/DeadWorks-Windows-x64.zip`: extraia os dois arquivos na mesma pasta e execute `DeadWorks.exe`. O GitHub Actions gera o mesmo par `DeadWorks.exe` + `DeadWorks.pck` e o disponibiliza em **Actions → execução → Artifacts → DeadWorks-Windows-x64** depois que este workflow for enviado ao GitHub. O artefato é um ZIP portátil, não um instalador com assistente.
-
-Uma exportação local pode ser refeita com `bash tools/export-windows.sh` quando o template Windows x64 da Godot 4.7.2 estiver instalado.
+Para exportar sem abrir o editor, execute `bash tools/export-windows.sh` na VM quando o template Windows x64 estiver instalado. O script gera `.exe` e `.pck` em `builds/windows/`; não gera ZIP local. O GitHub Actions ainda publica os dois arquivos juntos como artefato para testes futuros.
 
 ## Estrutura
 
-- `scenes/` e `scripts/world/`: cena, entrada, câmera, interface e desenho.
-- `scripts/core/`: regras de simulação testáveis sem renderização.
+- `scenes/prototype3d/` e `scripts/prototype3d/`: arena, personagens, câmera, arma, spawner e HUD independentes.
+- `scenes/main.tscn`, `scripts/world/` e `scripts/core/`: MVP 2D preservado e sua simulação.
 - `tests/` e `tools/`: validação headless e comandos auxiliares.
 - `assets/` e `data/`: sprites originais e futuras definições textuais.
 - `docs/`: plano do MVP e notas do ambiente.
 
-O personagem, o zumbi e o processador usam sprites originais; chão, sucata, esteiras, montadora e barricadas usam desenho isométrico nativo da Godot. O editor visual e o teste de jogabilidade continuam no notebook.
+O protótipo 3D usa meshes primitivas geradas no projeto. O teste visual de iluminação, câmera e desempenho deve ser feito no notebook com GPU.

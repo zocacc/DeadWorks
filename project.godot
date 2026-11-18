@@ -3,7 +3,7 @@ config_version=5
 [application]
 
 config/name="DeadWorks"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/prototype3d/arena.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]
